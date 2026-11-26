@@ -135,7 +135,7 @@ class _Ctx:
 # ------------------------------------------------------------------ 正则
 
 FIELD_CALL = re.compile(
-    r"Blocks\.(register|registerStair|registerLegacyStair|registerSlab|registerWall)\s*\("
+    r"(?<![\w.])(?:Blocks\.)?(register|registerStair|registerLegacyStair|registerSlab|registerWall)\s*\("
 )
 COLLECTION_CALL = re.compile(
     r"(ColorCollection|WeatheringCopperCollection)\.(registerBlocks|zipMap)\s*\("
@@ -149,50 +149,53 @@ NUM_RE = re.compile(r"^(?:\(float\)\s*)?\(?\s*(-?\d+(?:\.\d+)?)[fF]?\s*\)?$")
 
 SCALAR_ID = re.compile(
     r"public static final (?:BlockItemId|ResourceKey<Block>)\s+([A-Z][A-Z0-9_]*)\s*=\s*"
-    r"(?:BlockItemId|BlockIds)\.create\(\"([^\"]+)\"(?:\s*,\s*\"[^\"]+\")?\)"
+    r"(?:(?:BlockItemId|BlockIds)\.)?create\(\"([^\"]+)\"(?:\s*,\s*\"[^\"]+\")?\)"
 )
 COLOR_ID = re.compile(
     r"public static final ColorCollection<(?:BlockItemId|ResourceKey<Block>)>\s+"
-    r"([A-Z][A-Z0-9_]*)\s*=\s*(?:BlockItemIds|BlockIds)\.createSimpleColored\(\"([^\"]+)\"\)"
+    r"([A-Z][A-Z0-9_]*)\s*=\s*(?:(?:BlockItemIds|BlockIds)\.)?createSimpleColored\(\"([^\"]+)\"\)"
 )
 COPPER_SIMPLE_ID = re.compile(
     r"public static final WeatheringCopperCollection<BlockItemId>\s+([A-Z][A-Z0-9_]*)\s*=\s*"
-    r"BlockItemIds\.createSimpleCopper\(\"([^\"]+)\"\)"
+    r"(?:BlockItemIds\.)?createSimpleCopper\(\"([^\"]+)\"\)"
 )
 COPPER_SPECIAL_ID = re.compile(
     r"public static final WeatheringCopperCollection<BlockItemId>\s+([A-Z][A-Z0-9_]*)\s*=\s*"
-    r"WeatheringCopperCollection\.prefixWithState\("
-    r"WeatheringCopperCollection\.same\(([A-Z][A-Z0-9_]*)\)\)\.map\(BlockItemId::create\)"
+    r"WeatheringCopperCollection\.prefixWithState\(\s*"
+    r"WeatheringCopperCollection\.same\(([A-Z][A-Z0-9_]*)\)\s*\)\s*\.map\(BlockItemId::create\)"
 )
-BY_STATE = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*new WeatheringCopperCollection\.ByState<String>\(([^)]*)\)")
+BY_STATE = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*new WeatheringCopperCollection\.ByState<(?:String)?>\(([^)]*)\)")
 
 MATERIAL_263 = re.compile(
     r"public static final ToolMaterial\s+([A-Z][A-Z0-9_]*)\s*=\s*new ToolMaterial\(\s*"
-    r"BlockTags\.([A-Z][A-Z0-9_]*)\s*,\s*(\d+)\s*,\s*(-?\d+(?:\.\d+)?)f\s*,\s*"
-    r"(-?\d+(?:\.\d+)?)f\s*,\s*(\d+)\s*,"
+    r"BlockTags\.([A-Z][A-Z0-9_]*)\s*,\s*(\d+)\s*,\s*(-?\d+(?:\.\d+)?)[fF]\s*,\s*"
+    r"(-?\d+(?:\.\d+)?)[fF]\s*,\s*(\d+)\s*,"
 )
 MATERIAL_1182 = re.compile(
-    r"^\s*([A-Z][A-Z0-9_]*)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(-?\d+(?:\.\d+)?)f\s*,\s*"
-    r"(-?\d+(?:\.\d+)?)f\s*,\s*(\d+)\s*,",
+    r"^\s*([A-Z][A-Z0-9_]*)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(-?\d+(?:\.\d+)?)[fF]\s*,\s*"
+    r"(-?\d+(?:\.\d+)?)[fF]\s*,\s*(\d+)\s*,",
     re.MULTILINE,
 )
 
 TAG_CONST = re.compile(
-    r"public static final TagKey<Block>\s+([A-Z][A-Z0-9_]*)\s*=\s*BlockTags\.create\(\"([^\"]+)\"\)"
+    r"public static final TagKey<Block>\s+([A-Z][A-Z0-9_]*)\s*=\s*(?:BlockTags\.)?create\(\"([^\"]+)\"\)"
 )
 ITEM_ID_263 = re.compile(
     r"public static final ResourceKey<Item>\s+([A-Z][A-Z0-9_]*)\s*=\s*"
-    r"ItemIds\.create\(\"([^\"]+)\"(?:\s*,[^)]*)?\)"
+    r"(?:ItemIds\.)?create\(\"([^\"]+)\"(?:\s*,[^)]*)?\)"
 )
-REGISTER_ITEM = re.compile(r"Items\.registerItem\s*\(")
+REGISTER_ITEM = re.compile(r"(?<![\w.])(?:Items\.)?registerItem\s*\(")
 MATERIAL_TOOL_263 = re.compile(
     r"\.(pickaxe|axe|hoe|shovel|sword)\s*\(\s*ToolMaterial\.([A-Z][A-Z0-9_]*)"
 )
 TOOL_METHOD_TAG = re.compile(
-    r"public Properties (pickaxe|axe|hoe|shovel)\(ToolMaterial material,\s*"
-    r"float attackDamageBaseline,\s*float attackSpeedBaseline\)\s*\{\s*"
+    r"public (?:Item\.)?Properties (pickaxe|axe|hoe|shovel)\((?:final )?ToolMaterial material,\s*"
+    r"(?:final )?float attackDamageBaseline,\s*(?:final )?float attackSpeedBaseline\)\s*\{\s*"
     r"return this\.tool\(material,\s*BlockTags\.([A-Z][A-Z0-9_]*)",
 )
+# Text right before a match that marks a method definition, e.g. `static Block register(`.
+METHOD_DEFINITION = re.compile(r"\bstatic\s+[\w.<>]+\s+$")
+TERNARY_RETURN = re.compile(r"\breturn\s+([^;?]+?)\s*\?\s*([^;:]+?)\s*:\s*([^;]+?)\s*;")
 RULE_CALL = re.compile(r"Tool\.Rule\.(minesAndDrops|deniesDrops|overrideSpeed)\s*\(")
 SEL_DIRECT_BLOCK = re.compile(
     r"HolderSet\.direct\(\s*Blocks\.([A-Z][A-Z0-9_]*)\.builtInRegistryHolder\(\)\s*\)"
@@ -248,7 +251,7 @@ def _lambda_body(expr: str) -> str:
 
 
 def _color_names(collection_text: str) -> tuple[str, ...]:
-    found = re.search(r"VALUES\s*=\s*new ColorCollection<DyeColor>\(([^)]*)\)", collection_text)
+    found = re.search(r"VALUES\s*=\s*new ColorCollection<(?:DyeColor)?>\(([^)]*)\)", collection_text)
     if not found:
         return ()
     return tuple(
@@ -260,7 +263,7 @@ def _color_names(collection_text: str) -> tuple[str, ...]:
 
 def _copper_prefixes(collection_text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     found = re.search(
-        r"PREFIXES\s*=\s*new WeatheringCopperCollection<String>\s*\(", collection_text
+        r"PREFIXES\s*=\s*new WeatheringCopperCollection<(?:String)?>\s*\(", collection_text
     )
     if not found:
         return (), ()
@@ -270,7 +273,7 @@ def _copper_prefixes(collection_text: str) -> tuple[tuple[str, ...], tuple[str, 
         return (), ()
     inner = collection_text[open_index + 1 : close]
     states: list[tuple[str, ...]] = []
-    for start in re.finditer(r"new ByState<String>\s*\(", inner):
+    for start in re.finditer(r"new (?:WeatheringCopperCollection\.)?ByState<(?:String)?>\s*\(", inner):
         state_open = start.end() - 1
         state_close = match_paren(inner, state_open)
         if state_close < 0:
@@ -415,7 +418,7 @@ def _eval_props(expr: str, ctx: _Ctx, depth: int = 0, label: str | None = None) 
             props = inherited
         start = close + 1 if close > 0 else base.end()
     else:
-        helper = re.match(r"\s*Blocks\.([A-Za-z_]\w*)\s*\(", expr)
+        helper = re.match(r"\s*(?:Blocks\.)?([A-Za-z_]\w*)\s*\(", expr)
         if helper is None or helper.group(1) not in ctx.helpers:
             return _Props(unresolved="属性来源不是 Properties.of* 也不是已知辅助方法")
         props = _eval_helper(helper.group(1), ctx, depth)
@@ -1043,7 +1046,8 @@ def _tool_facts_1182(ctx: _Ctx, index: JavaIndex, notes: list[str]) -> list[tupl
     digger = _text(index, "DiggerItem")
     if digger is not None:
         for found in re.finditer(
-            r"if\s*\(\s*\w+\s*<\s*(\d+)\s*&&\s*blockState\.is\(BlockTags\.([A-Z][A-Z0-9_]*)\)",
+            # The last tier may be decompiled as a ternary return.
+            r"(?:\bif\s*\(|\breturn)\s*\w+\s*<\s*(\d+)\s*&&\s*blockState\.is\(BlockTags\.([A-Z][A-Z0-9_]*)\)",
             digger[1],
         ):
             gates.append(
@@ -1169,6 +1173,31 @@ def _if_return_rules(body: str, ctx: _Ctx, notes: list[str]) -> list[dict]:
             continue
         for selector in selectors:
             rules.append(_rule_payload(selector, speed, None))
+    # A trailing `else if` may be decompiled as a ternary. Only one side may be a literal;
+    # on the `:` side the condition must be all negated terms (De Morgan).
+    for found in TERNARY_RETURN.finditer(body):
+        condition, when_true, when_false = found.groups()
+        true_speed, false_speed = _as_float(when_true), _as_float(when_false)
+        if (true_speed is None) == (false_speed is None):
+            continue
+        terms = re.findall(r"(!?)\s*blockState\.is\(", condition)
+        if not terms:
+            continue
+        negated = {flag == "!" for flag in terms}
+        if false_speed is not None and negated == {True} and "||" not in condition:
+            speed = false_speed
+        elif true_speed is not None and negated == {False} and "&&" not in condition:
+            speed = true_speed
+        else:
+            continue
+        selectors = [
+            f"block:minecraft:{ctx.blocks[name].block_id}"
+            for name in IF_SEL_BLOCK.findall(condition)
+            if name in ctx.blocks
+        ]
+        selectors += [f"tag:{_tag_name(ctx, name)}" for name in IF_SEL_TAG.findall(condition)]
+        for selector in selectors:
+            rules.append(_rule_payload(selector, speed, None))
     return rules
 
 
@@ -1212,7 +1241,7 @@ def _formula(index: JavaIndex, notes: list[str]) -> tuple[dict, str, list[str]] 
     body = text[start + 1 : match_brace(text, start)]
 
     missing: list[str] = []
-    unbreakable = re.search(r"==\s*(-?\d+(?:\.\d+)?)f", body)
+    unbreakable = re.search(r"==\s*(-?\d+(?:\.\d+)?)[fF]", body)
     divisors = re.search(r"\?\s*(\d+)\s*:\s*(\d+)", body)
     if unbreakable is None:
         missing.append("unbreakable_hardness")
@@ -1254,7 +1283,7 @@ def _player_speed(text: str) -> tuple[dict, list[str]]:
     out: dict = {}
     missing: list[str] = []
 
-    threshold = re.search(r">\s*(-?\d+(?:\.\d+)?)f", body)
+    threshold = re.search(r">\s*(-?\d+(?:\.\d+)?)[fF]", body)
     if threshold is not None:
         out["efficiency_min_speed"] = float(threshold.group(1))
     else:
@@ -1267,7 +1296,7 @@ def _player_speed(text: str) -> tuple[dict, list[str]]:
     else:
         missing.append("efficiency")
 
-    haste = re.search(r"\+\s*1\)\s*\*\s*(-?\d+(?:\.\d+)?)f", body)
+    haste = re.search(r"\+\s*1\)\s*\*\s*(-?\d+(?:\.\d+)?)[fF]", body)
     if haste is not None:
         out["haste_multiplier_per_level"] = float(haste.group(1))
     else:
@@ -1287,7 +1316,7 @@ def _player_speed(text: str) -> tuple[dict, list[str]]:
         out["submerged"] = "attribute:minecraft:submerged_mining_speed"
     else:
         water = re.search(
-            r"isEyeInFluid\(FluidTags\.WATER\).*?/[=]?\s*(-?\d+(?:\.\d+)?)f", body, re.S
+            r"isEyeInFluid\(FluidTags\.WATER\).*?/[=]?\s*(-?\d+(?:\.\d+)?)[fF]", body, re.S
         )
         if water is not None:
             out["submerged_divisor"] = float(water.group(1))
@@ -1295,7 +1324,7 @@ def _player_speed(text: str) -> tuple[dict, list[str]]:
             missing.append("submerged")
 
     air = re.search(
-        r"!\s*this\.onGround.*?/[=]?\s*(-?\d+(?:\.\d+)?)f", body, re.S
+        r"!\s*this\.onGround.*?/[=]?\s*(-?\d+(?:\.\d+)?)[fF]", body, re.S
     )
     if air is not None:
         out["airborne_divisor"] = float(air.group(1))
@@ -1352,7 +1381,12 @@ class MiningFacts(Idiom):
                 blocks_source[0],
             )
 
-        internal = len(FIELD_CALL.findall(scan_text)) - ctx.claimed_calls
+        # Unqualified calls also match method definitions; do not count those.
+        calls = sum(
+            1 for found in FIELD_CALL.finditer(scan_text)
+            if not METHOD_DEFINITION.search(scan_text[max(0, found.start() - 120) : found.start()])
+        )
+        internal = calls - ctx.claimed_calls
         if internal:
             notes.append(f"Blocks.java 方法体内的注册调用 {internal} 处（复制包装定义），由包装语义覆盖")
 

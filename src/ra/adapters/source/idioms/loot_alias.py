@@ -45,7 +45,7 @@ from .base import Idiom, IdiomResult, Link
 ID = "loot_alias"
 
 # `FIELD = Blocks.register(` —— 字段名即注册名（两版都成立）
-REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*Blocks\.register\s*\(")
+REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*(?:Blocks\.)?register\s*\(")
 
 # 借用声明：1.18.2 是 `dropsLike(Blocks.X)`，26.3 是 `wallVariant(X, true)`。
 # 26.3 的 X 是裸标识符（`Blocks` 类内部指本类字段），且带第二个布尔参数。
@@ -76,7 +76,7 @@ class LootAliases(Idiom):
     def run(self, index: JavaIndex) -> IdiomResult:
         result = IdiomResult()
         for java in index.files.values():
-            if "Blocks.register" not in java.text:
+            if java.stem != "Blocks" and "Blocks.register" not in java.text:
                 continue
             self._file(java, result)
         return result
@@ -84,6 +84,8 @@ class LootAliases(Idiom):
     def _file(self, java: JavaFile, result: IdiomResult) -> None:
         text = java.text
         for match in REGISTER_DECL.finditer(text):
+            if java.stem != "Blocks" and "Blocks.register" not in match.group():
+                continue
             owner = match.group(1).lower()
             close = _match_paren(text, match.end() - 1)
             if close < 0:

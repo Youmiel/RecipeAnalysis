@@ -47,7 +47,7 @@ ID = "fluid_buckets"
 FLUID_BUCKET = re.compile(r"new\s+BucketItem\s*\(\s*Fluids?\.([A-Z][A-Z0-9_]*)")
 SOLID_BUCKET = re.compile(r"new\s+SolidBucketItem\s*\(\s*Blocks\.([A-Z][A-Z0-9_]*)")
 
-REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*Items\.registerItem\s*\(")
+REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*(?:(Items)\.)?registerItem\s*\(")
 ITEM_ID_CONST = re.compile(r"ItemIds\.([A-Z][A-Z0-9_]*)")
 BLOCK_ITEM_ID_CONST = re.compile(r"BlockItemIds\.([A-Z][A-Z0-9_]*)")
 
@@ -89,6 +89,8 @@ class FluidBuckets(Idiom):
         text = java.text
         registers: dict[str, tuple[int, str]] = {}
         for match in REGISTER_DECL.finditer(text):
+            if match.group(2) is None and java.stem != "Items":
+                continue
             registers[match.group(1)] = (match.start(), _call_args(text, match.end() - 1))
         if not registers:
             return

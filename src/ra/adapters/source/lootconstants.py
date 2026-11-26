@@ -41,7 +41,7 @@ COLOR_COLLECTION = re.compile(
 
 # 颜色顺序的来源：`ColorCollection<DyeColor> VALUES = new ColorCollection<DyeColor>(DyeColor.WHITE, ...)`
 COLOR_NAMES = re.compile(
-    r"ColorCollection<DyeColor>\s+VALUES\s*=\s*new\s+ColorCollection<DyeColor>\(([^;]+)\)"
+    r"ColorCollection<DyeColor>\s+VALUES\s*=\s*new\s+ColorCollection<(?:DyeColor)?>\(([^;]+)\)"
 )
 DYE_LITERAL = re.compile(r"DyeColor\.([A-Z][A-Z0-9_]*)")
 

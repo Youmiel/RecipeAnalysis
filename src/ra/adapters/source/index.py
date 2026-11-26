@@ -129,6 +129,13 @@ ANCHORS: dict[str, tuple[str, str]] = {
 }
 
 COMPILED_ANCHORS = {name: re.compile(pat) for name, (pat, _) in ANCHORS.items()}
+# Static calls within the declaring class may omit the class name.
+LOCAL_REGISTRATION = {
+    "Items": ("items_register_block", re.compile(r"=\s*register(?:Block|Item)\s*\(")),
+    "Blocks": ("blocks_register", re.compile(r"=\s*register\s*\(")),
+    "StructureType": ("structure_type_register", re.compile(r'=\s*register\(\s*"')),
+    "StructureFeature": ("structure_type_register", re.compile(r'=\s*register\(\s*"')),
+}
 COMPILED_EXCLUDE = [(name, re.compile(pat)) for name, pat in EXCLUDE_RULES]
 
 
@@ -268,6 +275,9 @@ def build_index(pack_dir: Path, label: str) -> JavaIndex:
             continue
 
         anchors = tuple(name for name, pat in COMPILED_ANCHORS.items() if pat.search(text))
+        local = LOCAL_REGISTRATION.get(path.stem)
+        if local and local[0] not in anchors and local[1].search(text):
+            anchors += (local[0],)
         if not anchors:
             index.no_anchor += 1
             continue

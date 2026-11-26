@@ -789,12 +789,16 @@ def ensure_datapack_merge(
     base_digest: str,
     *,
     base_version: PackVersion | None = None,
+    base_worldgen: Path | None = None,
     force: bool = False,
 ) -> DatapackMerge:
     """确保覆盖合并结果就位。
 
     没有数据包时不建目录，返回 `mode=identity` 与传入的原版数据根——下游读到的
     仍是那份目录，既有输入的产物因此逐字节不变。
+
+    `base_worldgen`: vanilla worldgen from the runtime reports, merged into the base
+    when the jar data has none.
     """
     source_dir = pack_datapacks(manifest.pack_dir)
     names = _discover(source_dir)
@@ -838,8 +842,20 @@ def ensure_datapack_merge(
                 f"适用于当前格式的 {len(active)} 个：{', '.join(active) or '（无）'}"
             )
 
+    base_rels = _base_rels(base_data_root)
+    worldgen_rels: frozenset[str] = frozenset()
+    if base_worldgen is not None and base_worldgen.is_dir():
+        worldgen_rels = frozenset(
+            f"{DATA_DIRNAME}/minecraft/worldgen/{path.relative_to(base_worldgen).as_posix()}"
+            for path in base_worldgen.rglob("*")
+            if path.is_file()
+        )
+        notes.append(
+            f"vanilla worldgen taken from runtime reports ({len(worldgen_rels)} files) "
+            "and merged into the base before datapacks"
+        )
     pending, dispositions, overrides, filtered, non_data, metadata, inactive_files = _plan(
-        units, _base_rels(base_data_root)
+        units, base_rels | worldgen_rels
     )
     if non_data:
         notes.append(
@@ -860,6 +876,7 @@ def ensure_datapack_merge(
     key = {
         "merge_schema": MERGE_SCHEMA,
         "base": base_digest,
+        "base_worldgen": len(worldgen_rels),
         "packs": [{"name": pack.name, "kind": pack.kind, "digest": pack.digest} for pack in packs],
     }
     key_digest = _dumps(key)
@@ -889,6 +906,8 @@ def ensure_datapack_merge(
         shutil.rmtree(root)
     dest_data.mkdir(parents=True, exist_ok=True)
     files = _copy_base(base_data_root, dest_data)
+    if worldgen_rels:
+        files += _copy_base(base_worldgen, dest_data / "minecraft" / "worldgen")
     base_files = files
     print(f"合并数据包：基底 {files} 个文件 → {dest_data}", file=sys.stderr)
 

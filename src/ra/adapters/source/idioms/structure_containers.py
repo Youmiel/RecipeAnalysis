@@ -55,7 +55,7 @@ KIND = "structure_container"
 # `StructureType.register("mineshaft", MineshaftStructure.CODEC)`（26.x）
 # `StructureFeature.register("mineshaft", new MineshaftFeature(...))`（1.18.2）
 REGISTRATION = re.compile(
-    r'\b([A-Z]\w*)\.register\(\s*"([a-z_]+)"\s*,\s*(?:new\s+)?([A-Z]\w*)\b'
+    r'(?<![\w.])(?:(StructureType|StructureFeature)\.)?register\(\s*"([a-z_]+)"\s*,\s*(?:new\s+)?([A-Z]\w*)\b'
 )
 
 # 结构类里引用到的拼装器：`OceanMonumentPieces.MonumentBuilding`。
@@ -126,7 +126,11 @@ class StructureContainers(Idiom):
 
         registrations: dict[str, str] = {}
         for java in index.files.values():
+            if "structure_type_register" not in java.anchors:
+                continue
             for owner, type_id, klass in REGISTRATION.findall(strip_comments(java.text)):
+                if not owner and java.stem not in ("StructureType", "StructureFeature"):
+                    continue
                 if not klass.endswith(STRUCTURE_CLASS_SUFFIXES):
                     continue
                 registrations[type_id] = klass

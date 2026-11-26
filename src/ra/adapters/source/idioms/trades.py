@@ -31,8 +31,9 @@ from .base import Idiom, IdiomResult, Link
 ID = "villager_trades"
 
 PROFESSION_PUT = re.compile(r"hashMap\.put\(\s*VillagerProfession\.([A-Z][A-Z0-9_]*)\s*,")
-LEVEL_ARRAY = re.compile(r"(?<![\w.])(\d+)\s*,\s*new\s+ItemListing\[\]\s*\{")
-OFFER_CONSTRUCT = re.compile(r"new\s+([A-Z]\w+)\s*\(")
+# Nested classes may be qualified with the outer class name.
+LEVEL_ARRAY = re.compile(r"(?<![\w.])(\d+)\s*,\s*new\s+(?:VillagerTrades\.)?ItemListing\[\]\s*\{")
+OFFER_CONSTRUCT = re.compile(r"new\s+(?:VillagerTrades\.)?([A-Z]\w+)\s*\(")
 TRADES_REGION_START = re.compile(r"Map<VillagerProfession[^;]*?=\s*Util\.make\(")
 
 # 1.18.x 的流浪商人交易表不按职业注册，而是独立的一张
@@ -40,7 +41,7 @@ TRADES_REGION_START = re.compile(r"Map<VillagerProfession[^;]*?=\s*Util\.make\("
 # 它不在 `VillagerTrades` 的 `TRADES` 区域里，只扫 `hashMap.put(VillagerProfession.X, …)`
 # 会整批漏掉——附魔书、藏宝图这类关键货物正在其中。
 WANDERER_TABLE = re.compile(
-    r"WANDERING_TRADER_TRADES\s*=\s*VillagerTrades\.toIntMap\("
+    r"WANDERING_TRADER_TRADES\s*=\s*(?:VillagerTrades\.)?toIntMap\("
 )
 WANDERER_PROFESSION = "wandering_trader"
 

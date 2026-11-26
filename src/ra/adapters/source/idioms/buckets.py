@@ -61,7 +61,7 @@ from .base import Idiom, IdiomResult, Link
 ID = "mob_buckets"
 
 # `FIELD = Items.registerItem(
-REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*Items\.registerItem\s*\(")
+REGISTER_DECL = re.compile(r"([A-Z][A-Z0-9_]*)\s*=\s*(?:(Items)\.)?registerItem\s*\(")
 
 # 26.3：`ItemIds.TADPOLE_BUCKET`；1.18.2：字符串字面量
 ITEM_ID_CONST = re.compile(r"ItemIds\.([A-Z][A-Z0-9_]*)")
@@ -144,6 +144,8 @@ class MobBuckets(Idiom):
         # 先建「字段名 → (注册调用结束位置, 实参文本)」，避免每个桶都重新扫全文
         registers: dict[str, tuple[int, str]] = {}
         for match in REGISTER_DECL.finditer(text):
+            if match.group(2) is None and java.stem != "Items":
+                continue
             registers[match.group(1)] = (match.start(), _call_args(text, match.end() - 1))
 
         for match in MOB_BUCKET.finditer(text):

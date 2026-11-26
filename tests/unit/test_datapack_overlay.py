@@ -156,6 +156,43 @@ class OverrideTest(_MergeBase):
         self.assertTrue((inner / "z.json").is_file())
 
 
+class ReportsWorldgenBaseTest(_MergeBase):
+    """Vanilla worldgen from runtime reports is the base layer under datapacks."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.reports = self.root / "reports" / "worldgen" / "minecraft" / "worldgen"
+        _write_json(self.reports / "biome" / "plains.json", {"features": []})
+        _write_json(self.reports / "structure_set" / "villages.json", {"placement": {"spacing": 34}})
+
+    def merge_with_reports(self, *names: str):
+        return ensure_datapack_merge(
+            self.manifest(*names),
+            self.base,
+            "base-digest",
+            base_version=(71, 0),
+            base_worldgen=self.reports,
+        )
+
+    def test_reports_worldgen_is_the_base_layer(self) -> None:
+        pack = self.add_pack("bingo")
+        _write_json(
+            pack / "data" / "minecraft" / "worldgen" / "structure_set" / "villages.json",
+            {"placement": {"spacing": 13}},
+        )
+        result = self.merge_with_reports("bingo")
+        worldgen = result.data_root / "minecraft" / "worldgen"
+        self.assertTrue((worldgen / "biome" / "plains.json").is_file(), "vanilla biome is missing")
+        self.assertEqual(
+            _read_json(worldgen / "structure_set" / "villages.json"), {"placement": {"spacing": 13}}
+        )
+        self.assertEqual(result.overrides, 1, "overriding a vanilla file counts as an override")
+
+    def test_without_packs_nothing_is_merged(self) -> None:
+        result = self.merge_with_reports()
+        self.assertEqual(result.mode, MODE_IDENTITY)
+
+
 class TagMergeTest(_MergeBase):
     def test_values_are_appended(self) -> None:
         pack = self.add_pack("tweak")

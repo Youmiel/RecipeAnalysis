@@ -51,7 +51,7 @@ ID = "place_source"
 
 # `FIELD = Items.registerBlock(` / `FIELD = Items.registerItem(`
 REGISTER_DECL = re.compile(
-    r"([A-Z][A-Z0-9_]*)\s*=\s*Items\.(?:registerBlock|registerItem)\s*\("
+    r"([A-Z][A-Z0-9_]*)\s*=\s*(?:(Items)\.)?(?:registerBlock|registerItem)\s*\("
 )
 
 # 放置目标的方块：`Blocks.X`。`createBlockItemWithCustomItemName(Blocks.X)` 也含这个形态。
@@ -105,7 +105,7 @@ class PlaceSource(Idiom):
                 "物品名全部退回字段名小写，需由对账确认"
             )
         for java in index.files.values():
-            if "Items.registerBlock" not in java.text and "Items.registerItem" not in java.text:
+            if java.stem != "Items" and "Items.registerBlock" not in java.text and "Items.registerItem" not in java.text:
                 continue
             self._file(java, constants, result)
         return result
@@ -117,6 +117,8 @@ class PlaceSource(Idiom):
         produced = 0
         non_block: list[str] = []
         for match in REGISTER_DECL.finditer(text):
+            if match.group(2) is None and java.stem != "Items":
+                continue
             field = match.group(1)
             args = _call_args(text, match.end() - 1)
             block = _first_block_arg(text, match.end() - 1)

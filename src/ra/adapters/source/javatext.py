@@ -110,10 +110,18 @@ def split_args(text: str) -> list[str]:
     """按顶层逗号切分参数列表。跳过嵌套括号、字符串、泛型尖括号。"""
     parts: list[str] = []
     depth = 0
+    # Generic brackets: `<` right after an identifier or `.` and before a type, `?` or `>`.
+    angle = 0
     current: list[str] = []
     i, n = 0, len(text)
     while i < n:
         ch = text[i]
+        if ch == "<" and i > 0 and (text[i - 1].isalnum() or text[i - 1] in "._") and (
+            i + 1 < n and (text[i + 1].isupper() or text[i + 1] in "?>")
+        ):
+            angle += 1
+        elif ch == ">" and angle:
+            angle -= 1
         if ch == '"':
             j = i + 1
             while j < n:
@@ -131,7 +139,7 @@ def split_args(text: str) -> list[str]:
             depth += 1
         elif ch in ")]}":
             depth -= 1
-        elif ch == "," and depth == 0:
+        elif ch == "," and depth == 0 and angle == 0:
             parts.append("".join(current).strip())
             current = []
             i += 1

@@ -32,7 +32,7 @@ from .index import JavaIndex
 
 # `FIELD = Cls.create("name")` 或 `FIELD = Cls.create("block", "item")`
 CONSTANT_DECL = re.compile(
-    r'([A-Z][A-Z0-9_]*)\s*=\s*\w+\.create\(\s*"([a-z0-9_/]+)"(?:\s*,\s*"([a-z0-9_/]+)")?'
+    r'([A-Z][A-Z0-9_]*)\s*=\s*(?:\w+\.)?create\(\s*"([a-z0-9_/]+)"(?:\s*,\s*"([a-z0-9_/]+)")?'
 )
 
 # 解析哪些类：类名 → 前缀

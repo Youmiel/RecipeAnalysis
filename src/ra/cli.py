@@ -229,11 +229,17 @@ def _prepare(manifest, root: Path, *, force: bool = False):
     cache = cache_root(root)
     reports = ensure_reports(manifest, cache, force=force)
     data = ensure_data(manifest, cache, force=force)
+    base_worldgen = None
+    if reports.root is not None and not (pack_data(manifest.pack_dir) / "minecraft" / "worldgen").is_dir():
+        candidate = Path(reports.root) / "worldgen" / "minecraft" / "worldgen"
+        if candidate.is_dir():
+            base_worldgen = candidate
     merge = ensure_datapack_merge(
         manifest,
         pack_data(manifest.pack_dir),
         f"{data.jar_sha256}|{data.files}",
         base_version=base_pack_version(manifest.pack_dir),
+        base_worldgen=base_worldgen,
         force=force,
     )
     structures = ensure_structures(manifest, cache, force=force, overlay=merge)
